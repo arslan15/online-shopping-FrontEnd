@@ -1,0 +1,246 @@
+.product-card {
+  width: 100%;
+  max-width: 260px; /* Constrains card from stretching too wide */
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 12px;
+  background-color: #ffedd5;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Scaled-Down Image Wrapper */
+.product-image-container {
+  width: 100%;
+  height: 140px; /* Reduces vertical height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.product-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Preserves book cover aspect ratio */
+}
+
+.product-content {
+  padding: 10px; /* Tighter padding */
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* Reduced vertical gap between elements */
+  flex-grow: 1;
+}
+
+.product-category {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0d9488;
+  background: #f0fdf4;
+  padding: 2px 5px;
+  border-radius: 4px;
+  align-self: flex-start;
+  font-weight: 600;
+}
+
+.product-title {
+  font-size: 0.85rem; /* Smaller title text to prevent overflow */
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.product-description {
+  font-size: 0.75rem;
+  color: #4b5563;
+  line-height: 1.2;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-qty {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.product-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 0 15px 15px 15px;
+  box-sizing: border-box;
+}
+
+.product-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: left; /* Aligns price nicely to the left side */
+}
+
+.product-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Balanced Buttons */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.prodButton {
+  width: 100%;
+  padding: 8px 0; /* Reduced padding prevents overly tall buttons */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+.prodButton:active {
+  transform: scale(0.98);
+}
+
+.prodButton:hover {
+  opacity: 0.9;
+}
+.cartBtn {
+  background-color: #0d9488;
+  color: #ffffff;
+}
+
+.cartBtn:hover {
+  background-color: #0f766e;
+}
+
+/* Details Secondary Outline/Ghost Button */
+.detailsBtn {
+  background-color: #1e293b;
+  color: #ffffff;
+  border: none;
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.detailsBtn:hover {
+  background-color: #0f172a;
+}
+/* Modal Overlay Background */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+/* Modal Content Card */
+.modal-content {
+  background-color: #0f172a;
+  color: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh; /* Prevents modal from expanding off-screen */
+  overflow-y: auto;  /* Adds scrollbar only if text is very long */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #1e293b;
+}
+.modal-meta p {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+.modal-title {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 12px 0;
+  text-align: center;
+}
+.modal-meta h3 {
+  color: #38bdf8; /* Prominent bright blue/cyan for Price */
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.modal-product-image {
+  width: 120px;            /* Fixed thumbnail width */
+  height: 120px;           /* Fixed thumbnail height */
+  object-fit: contain;     /* Keeps aspect ratio without clipping */
+  border-radius: 8px;
+  margin: 10px auto;
+  display: block;
+  background-color: #1e293b; /* Fallback frame background */
+  padding: 4px;
+}
+
+.modal-description {
+  color: #cbd5e1; /* Soft off-white for readability */
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 12px 0;
+  text-align: center;
+}
+
+.modal-meta {
+  margin-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.modal-actions {
+  margin-top: 16px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

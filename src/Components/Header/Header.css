@@ -1,0 +1,317 @@
+:root {
+  --nav-bg: rgba(10, 13, 24, 0.75);
+  --nav-text: #94a3b8;
+  --nav-text-active: #ffffff;
+  --nav-accent: #c084fc;
+  --nav-accent-bg: rgba(124, 58, 237, 0.15);
+  --nav-accent-hover: #7e22ce;
+  --logout-bg: rgba(220, 38, 38, 0.12);
+  --logout-border: rgba(239, 68, 68, 0.25);
+  --logout-hover: rgba(220, 38, 38, 0.25);
+  --border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Base Header Styling with Glassmorphism */
+.header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.header-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Logo Alignment & Glow */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  letter-spacing: -0.5px;
+}
+
+.logo span,
+.logo-text span {
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text; 
+  
+}
+
+.logo-img {
+  height: 34px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.4));
+}
+
+/* Navigation Menu Container */
+.nav-menu {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Navigation Links */
+.nav-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding: 0.55rem 0.9rem !important;
+  color: var(--nav-text) !important;
+  text-decoration: none !important;
+  font-size: 0.925rem;
+  font-weight: 500;
+  line-height: 1 !important;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Nav Link Hover State */
+.nav-link:hover {
+  color: var(--nav-text-active) !important;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link:hover .nav-icon {
+  color: #38bdf8 !important;
+}
+
+/* Active Nav Link */
+.nav-link.active {
+  background-color: var(--nav-accent-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  font-weight: 600;
+}
+
+.nav-link.active .nav-icon {
+  color: var(--nav-accent) !important;
+}
+
+/* Cart Specific Positioning & Badge */
+.cart-link .cart-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+/* Icon Sizing & Alignment */
+.nav-icon {
+  font-size: 0.95rem !important;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Authentication Buttons */
+.auth-btn,
+.login-btn,
+.logout-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding: 0.55rem 1.25rem !important;
+  border-radius: 10px !important;
+  font-size: 0.925rem;
+  font-weight: 600;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Login Button Specifics */
+.login-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5) !important;
+}
+
+.login-btn .nav-icon {
+  color: #ffffff !important;
+}
+
+/* Logout Button Specifics */
+.logout-btn {
+  background-color: var(--logout-bg) !important;
+  color: #f87171 !important;
+  border: 1px solid var(--logout-border) !important;
+}
+
+.logout-btn:hover {
+  background-color: var(--logout-hover) !important;
+  color: #ffffff !important;
+}
+
+.logout-btn .nav-icon {
+  color: #f87171 !important;
+}
+
+.logout-btn:hover .nav-icon {
+  color: #ffffff !important;
+}
+
+/* Mobile Toggle Button */
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  .mobile-toggle {
+    display: block;
+  }
+
+  .nav-menu {
+    display: none !important;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: rgba(10, 13, 24, 0.95) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    flex-direction: column;
+    align-items: stretch !important;
+    padding: 1.25rem 1rem;
+    gap: 0.65rem !important;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+  }
+
+  .nav-menu.active {
+    display: flex !important;
+  }
+
+  .nav-link,
+  .auth-btn,
+  .login-btn,
+  .logout-btn {
+    width: 100% !important;
+    box-sizing: border-box;
+    justify-content: center !important;
+  }
+}
+/* Brand Container & Alignment */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-decoration: none !important;
+  letter-spacing: -0.5px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.logo:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+/* Rotating SVG Logo Wrapper & Glow */
+.logo-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.logo-img {
+  height: 36px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(97, 218, 251, 0.6));
+  animation: logoSpin 20s linear infinite;
+}
+
+@keyframes logoSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dual-Tone Typography Gradients */
+.logo-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-primary {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 8px rgba(168, 85, 247, 0.3));
+}
+
+.brand-secondary {
+  background: linear-gradient(135deg, #818cf8 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.25));
+}
