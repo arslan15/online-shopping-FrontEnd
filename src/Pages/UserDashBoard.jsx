@@ -36,10 +36,12 @@ const UserDashboard = () => {
   const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   // Fetch ALL products once (no server pagination params)
-  useEffect(() => {
-  let isMounted = true; // Prevents state updates on unmounted components
+useEffect(() => {
+  let isMounted = true;
 
   const fetchProducts = async () => {
+    // Fallback directly to your live Render endpoint
+    const apiUrl = process.env.REACT_APP_API_BASE_URL || 'https://online-shopping-backend-0kqg.onrender.com/api';
     const token = localStorage.getItem('token');
     const cleanToken = token ? token.replace(/"/g, '') : '';
 
@@ -47,9 +49,8 @@ const UserDashboard = () => {
     setError(null);
 
     try {
-      // Corrected query param format: page=${currentPage}
       const response = await axios.get(
-        `${BASE_URL}/Products?page=${currentPage}&limit=${limit}`,
+        `${apiUrl}/Products?page=${currentPage}&limit=${limit}`,
         {
           headers: cleanToken ? { Authorization: `Bearer ${cleanToken}` } : {},
         }
@@ -58,22 +59,29 @@ const UserDashboard = () => {
       const rawData = response.data;
 
       if (isMounted) {
-        if (rawData && Array.isArray(rawData.data)) {
-          setProducts(rawData.data);
-        } else if (Array.isArray(rawData)) {
+        // Extract array safely from Render wrapper
+        if (Array.isArray(rawData)) {
           setProducts(rawData);
+        } else if (rawData && Array.isArray(rawData.data)) {
+          setProducts(rawData.data);
+        } else if (rawData && Array.isArray(rawData.products)) {
+          setProducts(rawData.products);
         } else {
           setProducts([]);
         }
 
-        if (rawData && rawData.pagination) {
+        // Extract total pages from server response
+        if (rawData && rawData.pagination && rawData.pagination.totalPages) {
           setTotalPages(rawData.pagination.totalPages);
         }
       }
     } catch (err) {
       if (isMounted) {
         console.error('Error fetching products:', err);
-        setError(err.response?.data?.message || 'Failed to load products.');
+        setError(
+          err.response?.data?.message || 
+          'Failed to load products. (Check if Render backend is awake)'
+        );
         setProducts([]);
       }
     } finally {
@@ -84,9 +92,9 @@ const UserDashboard = () => {
   fetchProducts();
 
   return () => {
-    isMounted = false; // Clean-up flag for double invocation
+    isMounted = false;
   };
-}, [BASE_URL, currentPage, limit]);
+}, [currentPage, limit]);
 
   return (
     <div className="user-dashboard-container">
