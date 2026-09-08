@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect,useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 
 // Helper function to safely extract values from nested paths (e.g., "category.name")
 const getNestedValue = (obj, path) => {
@@ -8,19 +8,13 @@ const getNestedValue = (obj, path) => {
 
 /**
  * Generic hook for client-side filtering and pagination.
- *
- * @param {Array|Object} items - Raw data array or API response wrapper
- * @param {Object} options - Configuration options
- * @param {Array} options.searchFields - Object keys to search against
- * @param {number} options.initialLimit - Default items per page (default: 10)
  */
 export const usePagination = (items = [], { searchFields = [], initialLimit = 10 } = {}) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(initialLimit);
   const [searchTerm, setSearchTerm] = useState('');
-   const [totalPages, setTotalPages] = useState(1);
 
-  // 1. Normalize input: Always extract a valid JS array
+  // 1. Normalize input: Always extract a valid JS array (Fixed const reassignment bug)
   const safeItems = useMemo(() => {
     if (Array.isArray(items)) return items;
     if (items && Array.isArray(items.categories)) return items.categories;
@@ -30,12 +24,7 @@ export const usePagination = (items = [], { searchFields = [], initialLimit = 10
     return [];
   }, [items]);
 
-  // Reset to page 1 whenever search query or limit changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, limit]);
-
-  // 2. Filter logic: Handles strings, numbers, arrays, and nested paths safely
+  // 2. Filter logic: Handles primitive values, nested paths, and arrays safely
   const filteredItems = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
     if (!query) return safeItems;
@@ -59,27 +48,49 @@ export const usePagination = (items = [], { searchFields = [], initialLimit = 10
         return String(val).toLowerCase().includes(query);
       })
     );
-  }, [safeItems, searchTerm, searchFields]);
+    // Stringify searchFields in dependencies to keep reference stable
+  }, [safeItems, searchTerm, JSON.stringify(searchFields)]);
 
-  // 3. Slice items for current page safely
+  // 3. Dynamically compute total pages from filtered results
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredItems.length / limit));
+  }, [filteredItems.length, limit]);
+
+  // 4. Reset to page 1 if current page goes out of bounds (e.g., after filtering)
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  // 5. Slice current items for active page
   const currentItems = useMemo(() => {
     const startIndex = (currentPage - 1) * limit;
     return filteredItems.slice(startIndex, startIndex + limit);
   }, [filteredItems, currentPage, limit]);
 
   // Handler functions
-  const handleSearchChange = (e) => setSearchTerm(e.target.value);
-  const clearSearch = () => setSearchTerm('');
- const handleLimitChange = useCallback((e) => {
+  const handleSearchChange = useCallback((e) => {
+    const val = e?.target ? e.target.value : e;
+    setSearchTerm(String(val || ''));
+    setCurrentPage(1);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  }, []);
+
+  const handleLimitChange = useCallback((e) => {
     const rawVal = e?.target ? e.target.value : e;
     const newLimit = Number(rawVal);
 
     if (!isNaN(newLimit) && newLimit > 0) {
       setLimit((prevLimit) => {
-        if (prevLimit === newLimit) return prevLimit; // Prevent unnecessary state updates/re-renders
+        if (prevLimit === newLimit) return prevLimit;
         return newLimit;
       });
-      setCurrentPage(1); // Reset to page 1 on limit change
+      setCurrentPage(1);
     }
   }, []);
 
@@ -89,7 +100,6 @@ export const usePagination = (items = [], { searchFields = [], initialLimit = 10
     currentPage,
     setCurrentPage,
     totalPages,
-    setTotalPages,
     limit,
     setLimit: handleLimitChange,
     searchTerm,
