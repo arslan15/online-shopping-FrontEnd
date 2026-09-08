@@ -402,50 +402,98 @@ fetchProducts();
 
   // Reusable Pagination Component
   const renderPaginationBar = () => (
-    <div className="pagination-wrapper" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <div className="pagination-controls-bar" style={{ display: 'flex', gap: '12px', alignItems: 'center',flexWrap: 'wrap' }}>
-        <button
-          className="pagination-btn"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => prev - 1)}
-          style={{ padding: '6px 12px', whiteSpace: 'nowrap', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
-        >
-          <FaChevronLeft className="btn-icon" /> Previous
-        </button>
+  <div
+    className="pagination-wrapper"
+    style={{
+      marginTop: '20px',
+      display: 'flex',
+      flexDirection: 'column', // Stacks items vertically on small mobile screens
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '12px',
+      width: '100%',
+      boxSizing: 'border-box',
+    }}
+  >
+    {/* Buttons and Indicator */}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        flexWrap: 'wrap',
+        width: '100%',
+      }}
+    >
+      <button
+        className="pagination-btn"
+        disabled={currentPage === 1}
+        onClick={() => setCurrentPage((prev) => prev - 1)}
+        style={{
+          padding: '6px 12px',
+          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <FaChevronLeft className="btn-icon" /> Previous
+      </button>
 
-        <div className="page-indicator">
-          <span>Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong></span>
-        </div>
-
-        <button
-          className="pagination-btn"
-          disabled={currentPage >= totalPages}
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-          style={{ padding: '6px 12px',  whiteSpace: 'nowrap', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
-        >
-          Next <FaChevronRight className="btn-icon" />
-        </button>
-
-        <div className="items-per-page-container" style={{ display: 'flex',
-          alignItems: 'center',
-          whiteSpace: 'nowrap' }}>
-          <label htmlFor="limit-select" style={{ marginRight: '6px' }}>Show:</label>
-          <select
-            id="limit-select"
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="items-per-page-select"
-            style={{ padding: '4px 8px', borderRadius: '4px' }}
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-        </div>
+      <div
+        className="page-indicator"
+        style={{
+          padding: '6px 10px',
+          whiteSpace: 'nowrap',
+          textAlign: 'center',
+        }}
+      >
+        <span>
+          Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+        </span>
       </div>
+
+      <button
+        className="pagination-btn"
+        disabled={currentPage >= totalPages}
+        onClick={() => setCurrentPage((prev) => prev + 1)}
+        style={{
+          padding: '6px 12px',
+          cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Next <FaChevronRight className="btn-icon" />
+      </button>
     </div>
-  );
+
+    {/* Items Per Page Dropdown */}
+    <div
+      className="items-per-page-container"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <label htmlFor="limit-select" style={{ marginRight: '6px' }}>
+        Show:
+      </label>
+      <select
+        id="limit-select"
+        value={limit}
+        onChange={(e) => setLimit(Number(e.target.value))}
+        className="items-per-page-select"
+        style={{ padding: '4px 8px', borderRadius: '4px' }}
+      >
+        <option value={10}>10</option>
+        <option value={25}>25</option>
+        <option value={50}>50</option>
+        <option value={100}>100</option>
+      </select>
+    </div>
+  </div>
+);
 
   // Search Input Component
   const renderSearchBar = () => (
