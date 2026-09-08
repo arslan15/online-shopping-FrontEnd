@@ -331,3 +331,90 @@
   background-color: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
+/* Container forces far-left and far-right alignment */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center; /* Pushes left group to far-left & right group to far-right */
+  align-items: center;
+  width: 100%;
+  margin-top: 30px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+}
+
+/* Far-left alignment for dropdown group */
+.items-per-page-container {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Gap between label and select box */
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Styled Dropdown */
+.items-per-page-select {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.items-per-page-select:hover,
+.items-per-page-select:focus {
+  border-color: #0d9488;
+}
+
+/* Far-right navigation controls group */
+.pagination-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Prominent Buttons */
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background-color: #0d9488;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #14b8a6;
+}
+
+.pagination-btn:disabled {
+  background-color: #1e293b;
+  color: #475569;
+  border: 1px solid #334155;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.page-indicator {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.page-indicator strong {
+  color: #38bdf8;
+}

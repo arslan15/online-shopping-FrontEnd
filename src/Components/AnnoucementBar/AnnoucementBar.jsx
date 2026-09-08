@@ -1,9 +1,9 @@
 import './Marquee.css';
 
-function AnnouncementBar({ orders }) {
-    const pendingCount = orders.filter(
-    (o) => (o.paymentStatus || o.status) === 'Pending'
-  ).length;
+const AnnouncementBar = ({ orders = [] }) => {
+  const pendingCount = Array.isArray(orders)
+    ? orders.filter((o) => (o.paymentStatus || o.status) === 'Pending').length
+    : 0;
 
   if (pendingCount === 0) return null;
   return (
