@@ -334,6 +334,7 @@
 /* Container forces far-left and far-right alignment */
 .pagination-wrapper {
   display: flex;
+  flex-direction: column;
   justify-content: center; /* Pushes left group to far-left & right group to far-right */
   align-items: center;
   width: 100%;

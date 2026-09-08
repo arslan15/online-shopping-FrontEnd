@@ -109,7 +109,7 @@ export default function Cart() {
             <h4 className="fw-bold">Your cart is empty</h4>
             <p className="text-muted">Looks like you haven't added anything to your cart yet.</p>
             <button 
-              onClick={() => navigate('/')} 
+              onClick={() => navigate('/User')} 
               className="btn btn-primary px-4 py-2 mt-2 fw-semibold"
             >
               Browse Products
