@@ -861,41 +861,82 @@ fetchProducts();
         )}
 
         {/* --- VIEW 6: SYSTEM SETTINGS --- */}
-        {activeTab === 'settings' && (
-          <form onSubmit={handleSaveSettings} style={{ padding: '20px', backgroundColor: '#0f172a', borderRadius: '8px' }}>
-            <h3 style={{ color: '#f8fafc', marginBottom: '15px' }}>Application Settings</h3>
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', color: '#cbd5e1', marginBottom: '5px' }}>Site Name</label>
-              <input
-                type="text"
-                value={settings.siteName}
-                onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                style={styles.input}
-              />
-            </div>
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={settings.maintenanceMode}
-                  onChange={() => handleSettingToggle('maintenanceMode')}
-                />
-                Maintenance Mode
-              </label>
-            </div>
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={settings.userRegistration}
-                  onChange={() => handleSettingToggle('userRegistration')}
-                />
-                Allow User Registration
-              </label>
-            </div>
-            <button type="submit" style={styles.button}>Save Settings</button>
-          </form>
-        )}
+    
+       {/* --- VIEW 6: SYSTEM SETTINGS --- */}
+{activeTab === 'settings' && (
+  <div style={{ maxWidth: '700px', margin: '0 auto', padding: '10px' }}>
+    <form onSubmit={handleSaveSettings} style={settingsStyles.card}>
+      
+      {/* Maintenance Mode */}
+      <div style={settingsStyles.row}>
+        <div style={settingsStyles.textGroup}>
+          <strong style={settingsStyles.title}>Maintenance Mode</strong>
+          <p style={settingsStyles.subtitle}>
+            Prevent non-admin users from accessing the application.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleSettingToggle('maintenanceMode')}
+          style={{
+            ...settingsStyles.toggleBtn,
+            backgroundColor: settings.maintenanceMode ? '#22c55e' : '#334155',
+            color: '#ffffff',
+          }}
+        >
+          {settings.maintenanceMode ? 'ENABLED' : 'DISABLED'}
+        </button>
+      </div>
+
+      {/* Allow User Registration */}
+      <div style={settingsStyles.row}>
+        <div style={settingsStyles.textGroup}>
+          <strong style={settingsStyles.title}>Allow User Registration</strong>
+          <p style={settingsStyles.subtitle}>
+            Allow new users to register accounts.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleSettingToggle('userRegistration')}
+          style={{
+            ...settingsStyles.toggleBtn,
+            backgroundColor: settings.userRegistration ? '#22c55e' : '#334155',
+            color: '#ffffff',
+          }}
+        >
+          {settings.userRegistration ? 'ENABLED' : 'DISABLED'}
+        </button>
+      </div>
+
+      {/* Allow User Login */}
+      <div style={settingsStyles.row}>
+        <div style={settingsStyles.textGroup}>
+          <strong style={settingsStyles.title}>Allow User Login</strong>
+          <p style={settingsStyles.subtitle}>
+            Allow existing users to log into their accounts.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleSettingToggle('userLogin')}
+          style={{
+            ...settingsStyles.toggleBtn,
+            backgroundColor: settings.userLogin ? '#22c55e' : '#334155',
+            color: '#ffffff',
+          }}
+        >
+          {settings.userLogin ? 'ENABLED' : 'DISABLED'}
+        </button>
+      </div>
+
+      {/* Submit Button */}
+      <button type="submit" style={settingsStyles.saveBtn}>
+        Save Settings
+      </button>
+    </form>
+  </div>
+)}
       </div>
     </div>
   );
@@ -936,5 +977,71 @@ const styleCategory = {
 };
 
 const styleProduct = { ...styleCategory };
+
+const settingsStyles = {
+  card: {
+    backgroundColor: '#0f172a',
+    borderRadius: '12px',
+    padding: '24px',
+    border: '1px solid #1e293b',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  row: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: '16px',
+    borderBottom: '1px solid #1e293b',
+    gap: '16px',
+    flexWrap: 'wrap', // Responsive wrapping for mobile devices
+  },
+  textGroup: {
+    textAlign: 'left',
+    flex: '1 1 250px',
+  },
+  title: {
+    color: '#f8fafc',
+    fontSize: '1rem',
+    display: 'block',
+    marginBottom: '4px',
+  },
+  subtitle: {
+    color: '#94a3b8',
+    margin: 0,
+    fontSize: '0.85rem',
+  },
+  toggleBtn: {
+    border: 'none',
+    outline: 'none',
+    padding: '8px 18px',
+    borderRadius: '20px',
+    fontWeight: '600',
+    fontSize: '0.75rem',
+    letterSpacing: '0.05em',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    minWidth: '95px',
+    textAlign: 'center',
+  },
+  saveBtn: {
+    border: 'none',
+    outline: 'none',
+    backgroundColor: '#0284c7',
+    color: '#ffffff',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    fontWeight: '600',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    marginTop: '10px',
+    transition: 'background-color 0.2s ease',
+    width: '100%',
+  },
+};
 
 export default AdminDashboard;
