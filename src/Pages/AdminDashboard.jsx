@@ -853,9 +853,10 @@ fetchProducts();
                     )}
                   </tbody>
                 </table>
+                 {renderPaginationBar()}
               </div>
             )}
-            {renderPaginationBar()}
+           
           </div>
         )}
 
