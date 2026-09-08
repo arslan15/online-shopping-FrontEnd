@@ -71,9 +71,9 @@ useEffect(() => {
         }
 
         // Extract total pages from server response
-        if (rawData && rawData.pagination && rawData.pagination.totalPages) {
-          setTotalPages(rawData.pagination.totalPages);
-        }
+       if (rawData?.pagination?.totalPages && typeof setTotalPages === 'function') {
+  setTotalPages(rawData.pagination.totalPages);
+}
       }
     } catch (err) {
       if (isMounted) {
