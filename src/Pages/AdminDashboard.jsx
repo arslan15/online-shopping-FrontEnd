@@ -403,12 +403,12 @@ fetchProducts();
   // Reusable Pagination Component
   const renderPaginationBar = () => (
     <div className="pagination-wrapper" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <div className="pagination-controls-bar" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+      <div className="pagination-controls-bar" style={{ display: 'flex', gap: '12px', alignItems: 'center',flexWrap: 'wrap' }}>
         <button
           className="pagination-btn"
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((prev) => prev - 1)}
-          style={{ padding: '6px 12px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+          style={{ padding: '6px 12px', whiteSpace: 'nowrap', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
         >
           <FaChevronLeft className="btn-icon" /> Previous
         </button>
@@ -421,12 +421,14 @@ fetchProducts();
           className="pagination-btn"
           disabled={currentPage >= totalPages}
           onClick={() => setCurrentPage((prev) => prev + 1)}
-          style={{ padding: '6px 12px', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+          style={{ padding: '6px 12px',  whiteSpace: 'nowrap', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
         >
           Next <FaChevronRight className="btn-icon" />
         </button>
 
-        <div className="items-per-page-container" style={{ marginLeft: '10px' }}>
+        <div className="items-per-page-container" style={{ display: 'flex',
+          alignItems: 'center',
+          whiteSpace: 'nowrap' }}>
           <label htmlFor="limit-select" style={{ marginRight: '6px' }}>Show:</label>
           <select
             id="limit-select"
