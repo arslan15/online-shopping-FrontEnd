@@ -71,10 +71,13 @@ function App() {
   const handleAddToCart = (product) => {
 
     const availableStock = product.ProductQty || 0;
-    if (availableStock <= 0 || requestedQty > availableStock) {
-    alert(`Sorry, "${product.productName}" is currently out of stock.`);
-    return;
-  }
+    const productId = product._id || product.id;
+    const existingItem = cart.find((item) => (item._id || item.id) === productId);
+    const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+  if (availableStock <= 0 || currentQtyInCart + 1 > availableStock) {
+      alert(`Sorry, "${product.productName}" is currently out of stock or limit reached.`);
+      return;
+    }
     setCart((prevCart) => {
       const productId = product._id || product.id;
       const existing = prevCart.find((item) => (item._id || item.id) === productId);
