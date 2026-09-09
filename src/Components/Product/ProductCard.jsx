@@ -8,6 +8,16 @@ const ProductCard = (props) => {
     setShowModal((prev) => !prev);
   };
 
+  // Stock Validation Check
+  const stockCount = Number(props.ProductQty) || 0;
+  const isOutOfStock = stockCount <= 0;
+
+  const handleAddToCartClick = (e) => {
+    if (e) e.stopPropagation();
+    if (isOutOfStock) return;
+    if (props.onAddToCart) props.onAddToCart();
+  };
+
   return (
     <>
       {/* Main Product Card */}
@@ -37,11 +47,16 @@ const ProductCard = (props) => {
             <p className="product-price">Price: Rs. {props.price}</p>
           )}
 
-          {/*<p className="product-description">{props.ProductDescription}</p>*/}
-
-          {props.ProductQty !== undefined && (
-            <p className="product-qty">Stock: {props.ProductQty}</p>
-          )}
+          {/* Stock Display Badge */}
+          <p className="product-qty">
+            {isOutOfStock ? (
+              <span className="out-of-stock-label" style={{ color: '#ef4444', fontWeight: 'bold' }}>
+                Out of Stock
+              </span>
+            ) : (
+              <span>Stock: {stockCount}</span>
+            )}
+          </p>
 
           <div className="button-group">
             <button 
@@ -51,10 +66,16 @@ const ProductCard = (props) => {
               Details
             </button>
             <button 
-              className="prodButton cartBtn" 
-              onClick={props.onAddToCart}
+              className={`prodButton cartBtn ${isOutOfStock ? 'disabled-btn' : ''}`} 
+              onClick={handleAddToCartClick}
+              disabled={isOutOfStock}
+              style={{
+                opacity: isOutOfStock ? 0.5 : 1,
+                cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                backgroundColor: isOutOfStock ? '#64748b' : undefined
+              }}
             >
-              Add To Cart
+              {isOutOfStock ? 'Out of Stock' : 'Add To Cart'}
             </button>
           </div>
         </div>
@@ -83,13 +104,18 @@ const ProductCard = (props) => {
             <h2 className="modal-title">{props.productName}</h2>
             
             <p className="modal-description">
-              {props.ProductDescription || "No detailed description provided for this product."}
+              {/*props.ProductDescription || "No detailed description provided for this product."*/}
             </p>
 
             <div className="modal-meta">
-              {props.ProductQty !== undefined && (
-                <p><strong>Stock Available:</strong> {props.ProductQty}</p>
-              )}
+              <p>
+                <strong>Stock Available:</strong>{' '}
+                {isOutOfStock ? (
+                  <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Out of Stock</span>
+                ) : (
+                  stockCount
+                )}
+              </p>
               {props.price && (
                 <h3>Price: Rs. {props.price}</h3>
               )}
@@ -97,13 +123,19 @@ const ProductCard = (props) => {
 
             <div className="modal-actions">
               <button 
-                className="prodButton cartBtn" 
+                className={`prodButton cartBtn ${isOutOfStock ? 'disabled-btn' : ''}`}
+                disabled={isOutOfStock}
                 onClick={() => {
-                  if (props.onAddToCart) props.onAddToCart();
-                  toggleModal();
+                  handleAddToCartClick();
+                  if (!isOutOfStock) toggleModal();
+                }}
+                style={{
+                  opacity: isOutOfStock ? 0.5 : 1,
+                  cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                  backgroundColor: isOutOfStock ? '#64748b' : undefined
                 }}
               >
-                Add To Cart
+                {isOutOfStock ? 'Out of Stock' : 'Add To Cart'}
               </button>
             </div>
           </div>

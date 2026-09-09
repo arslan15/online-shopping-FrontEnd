@@ -69,6 +69,12 @@ function App() {
 
   // 5. Cart Handlers
   const handleAddToCart = (product) => {
+
+    const availableStock = product.ProductQty || 0;
+    if (availableStock <= 0 || requestedQty > availableStock) {
+    alert(`Sorry, "${product.productName}" is currently out of stock.`);
+    return;
+  }
     setCart((prevCart) => {
       const productId = product._id || product.id;
       const existing = prevCart.find((item) => (item._id || item.id) === productId);
