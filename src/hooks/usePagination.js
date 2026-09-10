@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 
+// Helper function for nested property retrieval (e.g., 'category.name')
 const getNestedValue = (obj, path) => {
-  if (!obj || !path) return null;
-  return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : null), obj);
+  if (!obj || !path) return undefined;
+  return path.split('.').reduce((acc, part) => acc?.[part], obj);
 };
 
 export const usePagination = (
@@ -42,9 +43,9 @@ export const usePagination = (
         return String(val).toLowerCase().includes(query);
       })
     );
-  }, [safeItems, searchTerm, JSON.stringify(searchFields), serverPagination]);
+  }, [safeItems, searchTerm, searchFields.join(','), serverPagination]);
 
-  // 3. Calculate total pages (Server override vs Client Math.ceil)
+  // 3. Calculate total pages
   const totalPages = useMemo(() => {
     if (serverPagination && typeof serverPagination.totalPages === 'number') {
       return serverPagination.totalPages;
@@ -52,7 +53,7 @@ export const usePagination = (
     return Math.max(1, Math.ceil(filteredItems.length / limit));
   }, [filteredItems.length, limit, serverPagination]);
 
-  // 4. Slice display items (Server bypasses slice vs Client slices locally)
+  // 4. Slice display items
   const currentItems = useMemo(() => {
     if (serverPagination) return safeItems;
 
@@ -67,6 +68,7 @@ export const usePagination = (
     }
   }, [currentPage, totalPages]);
 
+  // --- HANDLERS ---
   const handleSearchChange = useCallback((e) => {
     const val = e?.target ? e.target.value : e;
     setSearchTerm(String(val || ''));

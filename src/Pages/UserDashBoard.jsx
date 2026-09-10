@@ -16,7 +16,7 @@ const UserDashboard = () => {
 
   const { handleAddToCart } = useContext(MyContext);
 
-  // Initialize generic pagination hook with serverPagination flag
+  // Initialize generic pagination hook
   const {
     currentItems: displayedProducts,
     currentPage,
@@ -30,10 +30,15 @@ const UserDashboard = () => {
   } = usePagination(products, {
     searchFields: ['productName', 'productCategoryType', 'ProductDescription'],
     initialLimit: 10,
-    serverPagination: apiPagination, // Synchronizes hook with backend metadata
+    serverPagination: apiPagination,
   });
 
-  // Fetch paginated products from server
+  // Reset page to 1 whenever search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, setCurrentPage]);
+
+  // Fetch paginated & filtered products from server
   useEffect(() => {
     let isMounted = true;
 
@@ -46,8 +51,9 @@ const UserDashboard = () => {
       setError(null);
 
       try {
+        // Adjust parameter key ('search', 'query', or 'q') based on backend route expectations
         const response = await axios.get(
-          `${apiUrl}/Products?page=${currentPage}&limit=${limit}`,
+          `${apiUrl}/Products?page=${currentPage}&limit=${limit}&search=${encodeURIComponent(searchTerm || '')}`,
           {
             headers: cleanToken ? { Authorization: `Bearer ${cleanToken}` } : {},
           }
@@ -56,7 +62,6 @@ const UserDashboard = () => {
         const rawData = response.data;
 
         if (isMounted) {
-          // Extract array safely from API response wrapper
           if (Array.isArray(rawData)) {
             setProducts(rawData);
           } else if (rawData && Array.isArray(rawData.data)) {
@@ -67,7 +72,6 @@ const UserDashboard = () => {
             setProducts([]);
           }
 
-          // Extract and set server pagination metadata
           if (rawData?.pagination) {
             setApiPagination(rawData.pagination);
           }
@@ -77,7 +81,7 @@ const UserDashboard = () => {
           console.error('Error fetching products:', err);
           setError(
             err.response?.data?.message || 
-            'Failed to load products. (Check if Render backend is awake)'
+            'Failed to load products. Check server status.'
           );
           setProducts([]);
         }
@@ -86,12 +90,18 @@ const UserDashboard = () => {
       }
     };
 
-    fetchProducts();
+    const timer = setTimeout(() => {
+      fetchProducts();
+    }, 300);
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
-  }, [currentPage, limit]);
+  }, [currentPage, limit, searchTerm]);
+
+  // Fallback check to avoid empty rendering when using server pagination
+  const itemsToRender = apiPagination ? products : displayedProducts;
 
   return (
     <div className="user-dashboard-container">
@@ -122,8 +132,8 @@ const UserDashboard = () => {
       ) : (
         <>
           <div className="product-grid">
-            {displayedProducts.length > 0 ? (
-              displayedProducts.map((product) => (
+            {itemsToRender.length > 0 ? (
+              itemsToRender.map((product) => (
                 <ProductCard
                   key={product._id || product.id}
                   productName={product.productName}

@@ -288,7 +288,6 @@ const AdminDashboard = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   const handleProductChange = (e) => {
     setFormProductData({ ...formProductData, [e.target.name]: e.target.value });
   };
