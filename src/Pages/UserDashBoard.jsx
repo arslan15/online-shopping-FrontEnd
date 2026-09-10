@@ -3,102 +3,99 @@ import axios from 'axios';
 import ProductCard from '../Components/Product/ProductCard';
 import './UserDashboard.css';
 import { usePagination } from '../hooks/usePagination';
-import { toast } from 'react-toastify';
 import MyContext from '../MyContext';
 import { 
-   FaSearch, FaTimes, FaChevronLeft, FaChevronRight 
+  FaSearch, FaTimes, FaChevronLeft, FaChevronRight 
 } from 'react-icons/fa';
 
 const UserDashboard = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
- 
+  const [apiPagination, setApiPagination] = useState(null);
 
-  // Initialize generic pagination hook
+  const { handleAddToCart } = useContext(MyContext);
+
+  // Initialize generic pagination hook with serverPagination flag
   const {
     currentItems: displayedProducts,
     currentPage,
     setCurrentPage,
     totalPages,
-    setTotalPages,
     limit,
     setLimit,
     searchTerm,
     setSearchTerm,
     clearSearch,
   } = usePagination(products, {
-    searchFields: ['productName', 'productCategoryType'],
+    searchFields: ['productName', 'productCategoryType', 'ProductDescription'],
     initialLimit: 10,
+    serverPagination: apiPagination, // Synchronizes hook with backend metadata
   });
 
-  const { handleAddToCart, currentUser } = useContext(MyContext);
-  const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  // Fetch paginated products from server
+  useEffect(() => {
+    let isMounted = true;
 
-  // Fetch ALL products once (no server pagination params)
-useEffect(() => {
-  let isMounted = true;
+    const fetchProducts = async () => {
+      const apiUrl = process.env.REACT_APP_API_BASE_URL || 'https://online-shopping-backend-0kqg.onrender.com/api';
+      const token = localStorage.getItem('token');
+      const cleanToken = token ? token.replace(/"/g, '') : '';
 
-  const fetchProducts = async () => {
-    // Fallback directly to your live Render endpoint
-    const apiUrl = process.env.REACT_APP_API_BASE_URL || 'https://online-shopping-backend-0kqg.onrender.com/api';
-    const token = localStorage.getItem('token');
-    const cleanToken = token ? token.replace(/"/g, '') : '';
+      setLoading(true);
+      setError(null);
 
-    setLoading(true);
-    setError(null);
+      try {
+        const response = await axios.get(
+          `${apiUrl}/Products?page=${currentPage}&limit=${limit}`,
+          {
+            headers: cleanToken ? { Authorization: `Bearer ${cleanToken}` } : {},
+          }
+        );
 
-    try {
-      const response = await axios.get(
-        `${apiUrl}/Products?page=${currentPage}&limit=${limit}`,
-        {
-          headers: cleanToken ? { Authorization: `Bearer ${cleanToken}` } : {},
+        const rawData = response.data;
+
+        if (isMounted) {
+          // Extract array safely from API response wrapper
+          if (Array.isArray(rawData)) {
+            setProducts(rawData);
+          } else if (rawData && Array.isArray(rawData.data)) {
+            setProducts(rawData.data);
+          } else if (rawData && Array.isArray(rawData.products)) {
+            setProducts(rawData.products);
+          } else {
+            setProducts([]);
+          }
+
+          // Extract and set server pagination metadata
+          if (rawData?.pagination) {
+            setApiPagination(rawData.pagination);
+          }
         }
-      );
-
-      const rawData = response.data;
-
-      if (isMounted) {
-        // Extract array safely from Render wrapper
-        if (Array.isArray(rawData)) {
-          setProducts(rawData);
-        } else if (rawData && Array.isArray(rawData.data)) {
-          setProducts(rawData.data);
-        } else if (rawData && Array.isArray(rawData.products)) {
-          setProducts(rawData.products);
-        } else {
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching products:', err);
+          setError(
+            err.response?.data?.message || 
+            'Failed to load products. (Check if Render backend is awake)'
+          );
           setProducts([]);
         }
-
-        // Extract total pages from server response
-       if (rawData?.pagination?.totalPages && typeof setTotalPages === 'function') {
-  setTotalPages(rawData.pagination.totalPages);
-}
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    } catch (err) {
-      if (isMounted) {
-        console.error('Error fetching products:', err);
-        setError(
-          err.response?.data?.message || 
-          'Failed to load products. (Check if Render backend is awake)'
-        );
-        setProducts([]);
-      }
-    } finally {
-      if (isMounted) setLoading(false);
-    }
-  };
+    };
 
-  fetchProducts();
+    fetchProducts();
 
-  return () => {
-    isMounted = false;
-  };
-}, [currentPage, limit]);
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, limit]);
 
   return (
     <div className="user-dashboard-container">
-      {/* Search Input */}
+      {/* Search Input Bar */}
       <div className="search-bar-container mb-4">
         <div className="search-input-wrapper">
           <FaSearch className="search-icon-left" />
@@ -117,7 +114,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Grid displays items paginated by hook */}
+      {/* Grid displays items */}
       {loading ? (
         <p className="dashboard-loading">Loading products...</p>
       ) : error ? (
@@ -148,46 +145,98 @@ useEffect(() => {
           </div>
 
           {/* Pagination Controls */}
-      <div className="pagination-wrapper">
-  {/* Left Section: Navigation Controls Bar */}
-  <div className="pagination-controls-bar">
-    <button
-      className="pagination-btn"
-      disabled={currentPage === 1}
-      onClick={() => setCurrentPage((prev) => prev - 1)}
-    >
-      <FaChevronLeft className="btn-icon" /> Previous
-    </button>
+          <div
+            className="pagination-wrapper"
+            style={{
+              marginTop: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                width: '100%',
+              }}
+            >
+              <button
+                className="pagination-btn"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
+                style={{
+                  padding: '6px 12px',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <FaChevronLeft className="btn-icon" /> Previous
+              </button>
 
-    <div className="page-indicator">
-      <span>Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong></span>
-    </div>
+              <div
+                className="page-indicator"
+                style={{
+                  padding: '6px 10px',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }}
+              >
+                <span>
+                  Page <strong>{currentPage}</strong> of <strong>{totalPages || 1}</strong>
+                </span>
+              </div>
 
-    <button
-      className="pagination-btn"
-      disabled={currentPage >= totalPages}
-      onClick={() => setCurrentPage((prev) => prev + 1)}
-    >
-      Next <FaChevronRight className="btn-icon" />
-    </button>
+              <button
+                className="pagination-btn"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                style={{
+                  padding: '6px 12px',
+                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Next <FaChevronRight className="btn-icon" />
+              </button>
+            </div>
 
-    {/* Dropdown placed right next to controls with spacing */}
-    <div className="items-per-page-container">
-      <label htmlFor="limit-select">Show:</label>
-      <select 
-        id="limit-select" 
-        value={limit} 
-        onChange={(e) => setLimit(Number(e.target.value))}
-        className="items-per-page-select"
-      >
-        <option value={10}>10</option>
-        <option value={25}>25</option>
-        <option value={50}>50</option>
-        <option value={100}>100</option>
-      </select>
-    </div>
-  </div>
-</div>
+            <div
+              className="items-per-page-container"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <label htmlFor="limit-select" style={{ marginRight: '6px' }}>
+                Show:
+              </label>
+              <select
+                id="limit-select"
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="items-per-page-select"
+                style={{ padding: '4px 8px', borderRadius: '4px' }}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
         </>
       )}
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import axios from 'axios';
 import { FaChevronLeft, FaChevronRight, FaSearch, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -12,7 +12,11 @@ const AdminDashboard = () => {
   const [categoriesList, setCategoriesList] = useState([]);
   const [productsList, setProductsList] = useState([]);
   const [isPending, startTransition] = useTransition();
-const [apiPagination, setApiPagination] = useState(null);
+  const [apiPagination, setApiPagination] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
   const [formData, setFormData] = useState({
     Description: '',
     categoryType: '',
@@ -27,10 +31,6 @@ const [apiPagination, setApiPagination] = useState(null);
     price: 0,
   });
 
-  const [loading, setLoading] = useState(false);
-  const BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-  // System Settings state
   const [settings, setSettings] = useState({
     siteName: 'My Application',
     maintenanceMode: false,
@@ -39,7 +39,7 @@ const [apiPagination, setApiPagination] = useState(null);
   });
 
   // Determine active dataset based on active tab
-  const getActiveList = () => {
+  const getActiveList = useCallback(() => {
     switch (activeTab) {
       case 'users':
         return usersList.filter((user) => user.role !== 'Admin');
@@ -52,8 +52,11 @@ const [apiPagination, setApiPagination] = useState(null);
       default:
         return [];
     }
-  };
-const isServerPaginated = activeTab === 'products';
+  }, [activeTab, usersList, categoriesList, productsList, orders]);
+
+  // Fixed tab check matching state value ('product')
+  const isServerPaginated = activeTab === 'product';
+
   const {
     currentItems: displayedItems,
     currentPage,
@@ -62,7 +65,6 @@ const isServerPaginated = activeTab === 'products';
     limit,
     setLimit,
     searchTerm,
-    setSearchTerm,
     handleSearchChange,
     clearSearch,
   } = usePagination(getActiveList(), {
@@ -73,35 +75,36 @@ const isServerPaginated = activeTab === 'products';
       'categoryDescription',
       'ProductDescription',
       'name',
-      'email',
-      'user',
-      'shippingAddress.fullName',
-      'paymentStatus',
     ],
     initialLimit: 10,
-   serverPagination: isServerPaginated ? apiPagination : null,
+    serverPagination: isServerPaginated ? apiPagination : null,
   });
 
   const handleTabChange = (tabName) => {
     startTransition(() => {
       setActiveTab(tabName);
+      setCurrentPage(1);
       clearSearch();
     });
+  };
+
+  // Helper for Authorization Headers
+  const getAuthHeader = () => {
+    const rawToken = localStorage.getItem('token');
+    const token = rawToken ? rawToken.replace(/^["']|["']$/g, '').trim() : '';
+    return { Authorization: `Bearer ${token}` };
   };
 
   // 1. Fetch Users
   useEffect(() => {
     if (activeTab !== 'users') return;
-    const token = localStorage.getItem('token');
     const fetchUsers = async () => {
       setLoading(true);
       try {
         const response = await axios.get(`${BASE_URL}/all?page=${currentPage}&limit=${limit}`, {
-          headers: {
-            Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-          },
+          headers: getAuthHeader(),
         });
-        setUsersList(response.data);
+        setUsersList(Array.isArray(response.data) ? response.data : response.data.users || []);
       } catch (error) {
         toast.error('Failed to fetch users list');
       } finally {
@@ -110,7 +113,7 @@ const isServerPaginated = activeTab === 'products';
     };
 
     fetchUsers();
-  }, [activeTab, BASE_URL]);
+  }, [activeTab, currentPage, limit, BASE_URL]);
 
   // 2. Fetch System Settings
   useEffect(() => {
@@ -118,11 +121,8 @@ const isServerPaginated = activeTab === 'products';
 
     const fetchSystemSettings = async () => {
       try {
-        const token = localStorage.getItem('token');
         const response = await axios.get(`${BASE_URL}/settings`, {
-          headers: {
-            Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-          },
+          headers: getAuthHeader(),
         });
         if (response.data) {
           setSettings({
@@ -147,24 +147,20 @@ const isServerPaginated = activeTab === 'products';
 
     const fetchCategories = async () => {
       setLoading(true);
-      const token = localStorage.getItem('token');
       try {
         const response = await axios.get(`${BASE_URL}/categories?page=${currentPage}&limit=${limit}`, {
-          headers: {
-            Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-          },
+          headers: getAuthHeader(),
         });
         const rawData = response.data;
-      if (Array.isArray(rawData)) {
-        setCategoriesList(rawData);
-      } else if (rawData && Array.isArray(rawData.categories)) {
-        setCategoriesList(rawData.categories);
-      } else if (rawData && Array.isArray(rawData.data)) {
-        setCategoriesList(rawData.data);
-      } else {
-        setCategoriesList([]); // Fallback to empty array if response is unexpected
-      }
-    
+        if (Array.isArray(rawData)) {
+          setCategoriesList(rawData);
+        } else if (rawData && Array.isArray(rawData.categories)) {
+          setCategoriesList(rawData.categories);
+        } else if (rawData && Array.isArray(rawData.data)) {
+          setCategoriesList(rawData.data);
+        } else {
+          setCategoriesList([]);
+        }
       } catch (error) {
         toast.error('Failed to fetch categories');
       } finally {
@@ -173,44 +169,44 @@ const isServerPaginated = activeTab === 'products';
     };
 
     fetchCategories();
-  }, [activeTab, BASE_URL]);
+  }, [activeTab, currentPage, limit, BASE_URL]);
 
-  // 4. Fetch Products
-  useEffect(() => {
-    if (activeTab !== 'product') return;
+  // 4. Fetch Products (Standalone Callback & Effect)
+  const fetchProducts = useCallback(async (pageToFetch, fetchLimit) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/Products?page=${pageToFetch}&limit=${fetchLimit}`,
+        { headers: getAuthHeader() }
+      );
+      
+      const rawData = response.data;
+      if (Array.isArray(rawData)) {
+        setProductsList(rawData);
+      } else if (rawData && Array.isArray(rawData.products)) {
+        setProductsList(rawData.products);
+      } else if (rawData && Array.isArray(rawData.data)) {
+        setProductsList(rawData.data);
+      } else {
+        setProductsList([]);
+      }
 
-   const fetchProducts = async () => {
-  const token = localStorage.getItem('token');
-  setLoading(true);
-  try {
-    const response = await axios.get(`${BASE_URL}/Products?page=${currentPage}&limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-      },
-    });
-    
-    const rawData = response.data;
-
-    if (Array.isArray(rawData)) {
-      setProductsList(rawData);
-    } else if (rawData && Array.isArray(rawData.products)) {
-      setProductsList(rawData.products);
-    } else if (rawData && Array.isArray(rawData.data)) {
-      setProductsList(rawData.data);
-    } else {
-      setProductsList([]); // Fallback if API structure is unexpected
+      if (rawData?.pagination) {
+        setApiPagination(rawData.pagination);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch products');
+      setProductsList([]);
+    } finally {
+      setLoading(false);
     }
-    setApiPagination(response.data.pagination);
-  } catch (error) {
-    toast.error('Failed to fetch products');
-    setProductsList([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [BASE_URL]);
 
-fetchProducts();
-}, [activeTab, BASE_URL]);
+  useEffect(() => {
+    if (activeTab === 'product') {
+      fetchProducts(currentPage, limit);
+    }
+  }, [activeTab, currentPage, limit, fetchProducts]);
 
   // 5. Fetch Orders
   useEffect(() => {
@@ -219,15 +215,11 @@ fetchProducts();
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-
         const res = await axios.get(`${BASE_URL}/orders?page=${currentPage}&limit=${limit}`, {
-          headers: {
-            Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-          },
+          headers: getAuthHeader(),
         });
-        if (res != null) {
-          setOrders(res.data);
+        if (res?.data) {
+          setOrders(Array.isArray(res.data) ? res.data : res.data.orders || []);
         }
       } catch (err) {
         console.error(err);
@@ -238,13 +230,13 @@ fetchProducts();
     };
 
     fetchOrders();
-  }, [activeTab, BASE_URL]);
+  }, [activeTab, currentPage, limit, BASE_URL]);
 
   const handleToggleActive = async (id, currentStatus) => {
     try {
-      await axios.patch(`${BASE_URL}/${id}/toggle-active`);
+      await axios.patch(`${BASE_URL}/${id}/toggle-active`, {}, { headers: getAuthHeader() });
       setUsersList((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, isActive: !currentStatus } : u))
+        prev.map((u) => (u.id === id || u._id === id ? { ...u, isActive: !currentStatus } : u))
       );
       toast.success('User status updated!');
     } catch (error) {
@@ -259,23 +251,11 @@ fetchProducts();
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(
-        `${BASE_URL}/settings`,
-        settings,
-        {
-          headers: {
-            Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-          },
-        }
-      );
-      if (response.data.settings) {
-        setSettings({
-          siteName: response.data.settings.siteName,
-          maintenanceMode: response.data.settings.maintenanceMode,
-          userRegistration: response.data.settings.userRegistration,
-          userLogin: response.data.settings.userLogin,
-        });
+      const response = await axios.put(`${BASE_URL}/settings`, settings, {
+        headers: getAuthHeader(),
+      });
+      if (response.data?.settings) {
+        setSettings(response.data.settings);
       }
       toast.success(response.data.message || 'System settings saved successfully!');
     } catch (error) {
@@ -286,18 +266,10 @@ fetchProducts();
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.patch(
         `${BASE_URL}/order/approval`,
-        {
-          orderId,
-          status: newStatus,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token?.replace(/"/g, '')}`,
-          },
-        }
+        { orderId, status: newStatus },
+        { headers: getAuthHeader() }
       );
 
       toast.success(`Order marked as ${newStatus}`);
@@ -333,21 +305,20 @@ fetchProducts();
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(BASE_URL + '/addCategory', {
-        categoryType: formData.categoryType,
-        categoryDescription: formData.Description,
-      },
-      {
-    headers: { Authorization: `Bearer ${token}` }
-  }
-    );
+      const response = await axios.post(
+        `${BASE_URL}/addCategory`,
+        {
+          categoryType: formData.categoryType,
+          categoryDescription: formData.Description,
+        },
+        { headers: getAuthHeader() }
+      );
 
       const savedCategory = response.data.category || response.data;
       if (savedCategory && savedCategory.categoryType) {
         setCategoriesList((prev) => [...prev, savedCategory]);
       } else {
-        const refreshResponse = await axios.get(`${BASE_URL}/categories`);
+        const refreshResponse = await axios.get(`${BASE_URL}/categories`, { headers: getAuthHeader() });
         setCategoriesList(refreshResponse.data);
       }
 
@@ -359,69 +330,45 @@ fetchProducts();
     }
   };
 
- const handleProductSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    // 1. Retrieve & sanitize token (strips extra quotes or whitespace)
-    const rawToken = localStorage.getItem('token');
-    const token = rawToken ? rawToken.replace(/^["']|["']$/g, '').trim() : '';
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
 
-    if (!token) {
-      toast.error('Session expired or no token found. Please log in again.');
-      return;
-    }
+    try {
+      const payload = {
+        productName: formProductData.productName,
+        ProductDescription: formProductData.ProductDescription,
+        productCategoryType: formProductData.productCategoryType,
+        ProductQty: Number(formProductData.ProductQty),
+        ImageUrl: formProductData.ImageUrl,
+        price: Number(formProductData.price),
+      };
 
-    // 2. Prepare payload with explicit type conversion for numeric fields
-    const payload = {
-      productName: formProductData.productName,
-      ProductDescription: formProductData.ProductDescription,
-      productCategoryType: formProductData.productCategoryType,
-      ProductQty: Number(formProductData.ProductQty),
-      ImageUrl: formProductData.ImageUrl,
-      price: Number(formProductData.price),
-    };
+      const response = await axios.post(`${BASE_URL}/addProduct`, payload, {
+        headers: getAuthHeader(),
+      });
 
-    // 3. Make authenticated request
-    const response = await axios.post(
-      `${BASE_URL}/addProduct`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const savedProduct = response.data.product || response.data;
+      if (savedProduct && savedProduct.productName) {
+        setProductsList((prev) => [...prev, savedProduct]);
+      } else {
+        fetchProducts(currentPage, limit);
       }
-    );
 
-    // 4. Extract saved product (supports both direct object or { product: {...} } response)
-    const savedProduct = response.data.product || response.data;
+      setFormProductData({
+        productName: '',
+        ProductDescription: '',
+        productCategoryType: '',
+        ProductQty: '',
+        ImageUrl: '',
+        price: 0,
+      });
 
-    if (savedProduct && savedProduct.productName) {
-      setProductsList((prev) => [...prev, savedProduct]);
-    } else {
-      const refreshResponse = await axios.get(`${BASE_URL}/products`);
-      setProductsList(refreshResponse.data);
+      toast.success(response.data.message || 'Product added successfully!');
+    } catch (error) {
+      console.error('ADD PRODUCT ERROR:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Failed to add product.');
     }
-
-    // 5. Reset form and inform user
-    setFormProductData({
-      productName: '',
-      ProductDescription: '',
-      productCategoryType: '',
-      ProductQty: '',
-      ImageUrl: '',
-      price: 0,
-    });
-
-    toast.success(response.data.message || 'Product added successfully!');
-  } catch (error) {
-    console.error('ADD PRODUCT ERROR:', error.response?.data || error.message);
-    
-    // Displays specific error (e.g., duplicate product name or missing token message from backend)
-    const errorMsg = error.response?.data?.message || 'Failed to add product.';
-    toast.error(errorMsg);
-  }
-};
+  };
 
   const getStatusBadgeStyle = (status) => {
     const base = {
@@ -436,105 +383,113 @@ fetchProducts();
     return { ...base, backgroundColor: '#b45309', color: '#fff' };
   };
 
-  // Reusable Pagination Component
   const renderPaginationBar = () => (
-  <div
-    className="pagination-wrapper"
-    style={{
-      marginTop: '20px',
-      display: 'flex',
-      flexDirection: 'column', // Stacks items vertically on small mobile screens
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '12px',
-      width: '100%',
-      boxSizing: 'border-box',
-    }}
-  >
-    {/* Buttons and Indicator */}
     <div
+      className="pagination-wrapper"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        flexWrap: 'wrap',
-        width: '100%',
+       marginTop: '20px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '12px',
+  width: '100%',
+  boxSizing: 'border-box',
       }}
     >
-      <button
-        className="pagination-btn"
-        disabled={currentPage === 1}
-        onClick={() => setCurrentPage((prev) => prev - 1)}
-        style={{
-          padding: '6px 12px',
-          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <FaChevronLeft className="btn-icon" /> Previous
-      </button>
-
       <div
-        className="page-indicator"
         style={{
-          padding: '6px 10px',
-          whiteSpace: 'nowrap',
-          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'center',
+          gap: '8px',
+          flexWrap: 'nowrap',
+          width: '100%',
+          justifyContent: 'center',
         }}
       >
-        <span>
-          Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
-        </span>
+        <button
+          className="pagination-btn"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((prev) => prev - 1)}
+          style={{
+            padding: '6px 12px',
+            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <FaChevronLeft className="btn-icon" /> Previous
+        </button>
+
+        <div
+          className="page-indicator"
+          style={{
+            padding: '6px 10px',
+            whiteSpace: 'nowrap',
+            textAlign: 'center',
+          }}
+        >
+          <span>
+            Page <strong>{currentPage}</strong> of <strong>{totalPages || 1}</strong>
+          </span>
+        </div>
+
+        <button
+          className="pagination-btn"
+          disabled={currentPage >= totalPages}
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+          style={{
+            padding: '6px 12px',
+            cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Next <FaChevronRight className="btn-icon" />
+        </button>
       </div>
 
-      <button
-        className="pagination-btn"
-        disabled={currentPage >= totalPages}
-        onClick={() => setCurrentPage((prev) => prev + 1)}
+      <div
+        className="items-per-page-container"
         style={{
-          padding: '6px 12px',
-          cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'center',
           whiteSpace: 'nowrap',
         }}
       >
-        Next <FaChevronRight className="btn-icon" />
-      </button>
+        <label htmlFor="limit-select" style={{ marginRight: '6px' }}>
+          Show:
+        </label>
+        <select
+          id="limit-select"
+          value={limit}
+          onChange={(e) => {
+            setLimit(Number(e.target.value));
+            setCurrentPage(1);
+          }}
+          className="items-per-page-select"
+          style={{ padding: '4px 8px', borderRadius: '4px' }}
+        >
+          <option value={10}>10</option>
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </div>
     </div>
+  );
 
-    {/* Items Per Page Dropdown */}
-    <div
-      className="items-per-page-container"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <label htmlFor="limit-select" style={{ marginRight: '6px' }}>
-        Show:
-      </label>
-      <select
-        id="limit-select"
-        value={limit}
-        onChange={(e) => setLimit(Number(e.target.value))}
-        className="items-per-page-select"
-        style={{ padding: '4px 8px', borderRadius: '4px' }}
-      >
-        <option value={10}>10</option>
-        <option value={25}>25</option>
-        <option value={50}>50</option>
-        <option value={100}>100</option>
-      </select>
-    </div>
-  </div>
-);
-
-  // Search Input Component
   const renderSearchBar = () => (
     <div style={{ marginBottom: '15px', position: 'relative', maxWidth: '350px' }}>
-      <FaSearch style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+      <FaSearch
+        style={{
+          position: 'absolute',
+          left: '10px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: '#94a3b8',
+        }}
+      />
       <input
         type="text"
         placeholder={`Search ${activeTab}...`}
@@ -552,7 +507,14 @@ fetchProducts();
       {searchTerm && (
         <FaTimes
           onClick={clearSearch}
-          style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', cursor: 'pointer' }}
+          style={{
+            position: 'absolute',
+            right: '10px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: '#94a3b8',
+            cursor: 'pointer',
+          }}
         />
       )}
     </div>
@@ -719,27 +681,30 @@ fetchProducts();
                 </thead>
                 <tbody>
                   {displayedItems.length > 0 ? (
-                    displayedItems.map((user) => (
-                      <tr key={user.id || user._id} style={styles.tr}>
-                        <td style={styles.td}>{user.id}</td>
-                        <td style={styles.td}>{user.name}</td>
-                        <td style={styles.td}>{user.email}</td>
-                        <td style={styles.td}><span style={styles.roleBadge}>{user.role}</span></td>
-                        <td style={styles.td}>
-                          <span style={{ ...styles.statusBadge, backgroundColor: user.isActive ? '#15803d' : '#b91c1c' }}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td style={styles.td}>
-                          <button
-                            style={{ ...styles.actionBtn, backgroundColor: user.isActive ? '#dc2626' : '#16a34a' }}
-                            onClick={() => handleToggleActive(user.id, user.isActive)}
-                          >
-                            {user.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    displayedItems.map((user) => {
+                      const uId = user.id || user._id;
+                      return (
+                        <tr key={uId} style={styles.tr}>
+                          <td style={styles.td}>{uId}</td>
+                          <td style={styles.td}>{user.name}</td>
+                          <td style={styles.td}>{user.email}</td>
+                          <td style={styles.td}><span style={styles.roleBadge}>{user.role}</span></td>
+                          <td style={styles.td}>
+                            <span style={{ ...styles.statusBadge, backgroundColor: user.isActive ? '#15803d' : '#b91c1c' }}>
+                              {user.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <button
+                              style={{ ...styles.actionBtn, backgroundColor: user.isActive ? '#dc2626' : '#16a34a' }}
+                              onClick={() => handleToggleActive(uId, user.isActive)}
+                            >
+                              {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="6" style={{ ...styles.td, textAlign: 'center' }}>No users found.</td>
@@ -772,7 +737,15 @@ fetchProducts();
                 </div>
                 <div style={styleCategory.inputGroup}>
                   <label style={styleCategory.label}>Category Description</label>
-                  <input type="text" name="Description" placeholder="Description" value={formData.Description} onChange={handleChange} required style={styles.input} />
+                  <input
+                    type="text"
+                    name="Description"
+                    placeholder="Description"
+                    value={formData.Description}
+                    onChange={handleChange}
+                    required
+                    style={styles.input}
+                  />
                 </div>
                 <button type="submit" style={{ ...styles.button, cursor: 'pointer' }}>Add Category</button>
               </fieldset>
@@ -822,34 +795,80 @@ fetchProducts();
                 <legend style={styleProduct.legend}>Product Form</legend>
                 <div style={styleProduct.inputGroup}>
                   <label style={styleProduct.label}>Product Name</label>
-                  <input type="text" name="productName" placeholder="Product Name" value={formProductData.productName} onChange={handleProductChange} required style={styles.input} />
+                  <input
+                    type="text"
+                    name="productName"
+                    placeholder="Product Name"
+                    value={formProductData.productName}
+                    onChange={handleProductChange}
+                    required
+                    style={styles.input}
+                  />
                 </div>
                 <div style={styleProduct.inputGroup}>
                   <label style={styleProduct.label}>Product Description</label>
-                  <input type="text" name="ProductDescription" placeholder="Product Description" value={formProductData.ProductDescription} onChange={handleProductChange} required style={styles.input} />
+                  <input
+                    type="text"
+                    name="ProductDescription"
+                    placeholder="Product Description"
+                    value={formProductData.ProductDescription}
+                    onChange={handleProductChange}
+                    required
+                    style={styles.input}
+                  />
                 </div>
                 <div style={styleProduct.inputGroup}>
                   <label style={styleProduct.label}>Product Category</label>
-                  <select name="productCategoryType" value={formProductData.productCategoryType || ''} onChange={handleProductChange} required style={styleCategory.input}>
+                  <select
+                    name="productCategoryType"
+                    value={formProductData.productCategoryType || ''}
+                    onChange={handleProductChange}
+                    required
+                    style={styles.input}
+                  >
                     <option value="">Select a Category Type</option>
-                    {Array.isArray(categoriesList) && categoriesList.map((cat, index) => (
-      <option key={cat._id || index} value={cat.categoryType}>
-        {cat.categoryType}
-      </option>
-    ))}
+                    {Array.isArray(categoriesList) &&
+                      categoriesList.map((cat, index) => (
+                        <option key={cat._id || index} value={cat.categoryType}>
+                          {cat.categoryType}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div style={styleProduct.inputGroup}>
                   <label style={styleProduct.label}>Product Qty</label>
-                  <input type="number" name="ProductQty" placeholder="Quantity" value={formProductData.ProductQty} onChange={handleProductChange} required style={styles.input} />
+                  <input
+                    type="number"
+                    name="ProductQty"
+                    placeholder="Quantity"
+                    value={formProductData.ProductQty}
+                    onChange={handleProductChange}
+                    required
+                    style={styles.input}
+                  />
                 </div>
                 <div style={styleProduct.inputGroup}>
-                  <label style={styleProduct.label}>Image Url</label>
-                  <input type="text" name="ImageUrl" placeholder="Image Url" value={formProductData.ImageUrl} onChange={handleProductChange} required style={styles.input} />
+                  <label style={styleProduct.label}>Image URL</label>
+                  <input
+                    type="text"
+                    name="ImageUrl"
+                    placeholder="Image URL"
+                    value={formProductData.ImageUrl}
+                    onChange={handleProductChange}
+                    style={styles.input}
+                  />
                 </div>
                 <div style={styleProduct.inputGroup}>
                   <label style={styleProduct.label}>Price</label>
-                  <input type="number" name="price" placeholder="Price" value={formProductData.price} onChange={handleProductChange} required style={styles.input} />
+                  <input
+                    type="number"
+                    name="price"
+                    placeholder="Price"
+                    value={formProductData.price}
+                    onChange={handleProductChange}
+                    required
+                    style={styles.input}
+                  />
                 </div>
                 <button type="submit" style={{ ...styles.button, cursor: 'pointer' }}>Add Product</button>
               </fieldset>
@@ -865,10 +884,10 @@ fetchProducts();
                   <thead>
                     <tr>
                       <th style={styles.th}>ID</th>
-                      <th style={styles.th}>Product Name</th>
+                      <th style={styles.th}>Name</th>
                       <th style={styles.th}>Category</th>
+                      <th style={styles.th}>Qty</th>
                       <th style={styles.th}>Price</th>
-                      <th style={styles.th}>Quantity</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -878,8 +897,8 @@ fetchProducts();
                           <td style={styles.td}>{(currentPage - 1) * limit + index + 1}</td>
                           <td style={styles.td}>{prod.productName}</td>
                           <td style={styles.td}>{prod.productCategoryType}</td>
-                          <td style={styles.td}>Rs. {prod.price}</td>
                           <td style={styles.td}>{prod.ProductQty}</td>
+                          <td style={styles.td}>Rs. {prod.price}</td>
                         </tr>
                       ))
                     ) : (
@@ -889,195 +908,99 @@ fetchProducts();
                     )}
                   </tbody>
                 </table>
-                 {renderPaginationBar()}
               </div>
             )}
-           
+            {renderPaginationBar()}
           </div>
         )}
 
-        {/* --- VIEW 6: SYSTEM SETTINGS --- */}
-    
-       {/* --- VIEW 6: SYSTEM SETTINGS --- */}
-{activeTab === 'settings' && (
-  <div style={{ maxWidth: '700px', margin: '0 auto', padding: '10px' }}>
-    <form onSubmit={handleSaveSettings} style={settingsStyles.card}>
-      
-      {/* Maintenance Mode */}
-      <div style={settingsStyles.row}>
-        <div style={settingsStyles.textGroup}>
-          <strong style={settingsStyles.title}>Maintenance Mode</strong>
-          <p style={settingsStyles.subtitle}>
-            Prevent non-admin users from accessing the application.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => handleSettingToggle('maintenanceMode')}
-          style={{
-            ...settingsStyles.toggleBtn,
-            backgroundColor: settings.maintenanceMode ? '#22c55e' : '#334155',
-            color: '#ffffff',
-          }}
-        >
-          {settings.maintenanceMode ? 'ENABLED' : 'DISABLED'}
-        </button>
-      </div>
-
-      {/* Allow User Registration */}
-      <div style={settingsStyles.row}>
-        <div style={settingsStyles.textGroup}>
-          <strong style={settingsStyles.title}>Allow User Registration</strong>
-          <p style={settingsStyles.subtitle}>
-            Allow new users to register accounts.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => handleSettingToggle('userRegistration')}
-          style={{
-            ...settingsStyles.toggleBtn,
-            backgroundColor: settings.userRegistration ? '#22c55e' : '#334155',
-            color: '#ffffff',
-          }}
-        >
-          {settings.userRegistration ? 'ENABLED' : 'DISABLED'}
-        </button>
-      </div>
-
-      {/* Allow User Login */}
-      <div style={settingsStyles.row}>
-        <div style={settingsStyles.textGroup}>
-          <strong style={settingsStyles.title}>Allow User Login</strong>
-          <p style={settingsStyles.subtitle}>
-            Allow existing users to log into their accounts.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => handleSettingToggle('userLogin')}
-          style={{
-            ...settingsStyles.toggleBtn,
-            backgroundColor: settings.userLogin ? '#22c55e' : '#334155',
-            color: '#ffffff',
-          }}
-        >
-          {settings.userLogin ? 'ENABLED' : 'DISABLED'}
-        </button>
-      </div>
-
-      {/* Submit Button */}
-      <button type="submit" style={settingsStyles.saveBtn}>
-        Save Settings
-      </button>
-    </form>
-  </div>
-)}
+        {/* --- VIEW 6: SETTINGS --- */}
+        {activeTab === 'settings' && (
+          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div>
+              <label style={styleCategory.label}>Site Name</label>
+              <input
+                type="text"
+                value={settings.siteName}
+                onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
+                style={styles.input}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                id="maintenanceMode"
+                checked={settings.maintenanceMode}
+                onChange={() => handleSettingToggle('maintenanceMode')}
+              />
+              <label htmlFor="maintenanceMode" style={{ color: '#f8fafc' }}>Maintenance Mode</label>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                id="userRegistration"
+                checked={settings.userRegistration}
+                onChange={() => handleSettingToggle('userRegistration')}
+              />
+              <label htmlFor="userRegistration" style={{ color: '#f8fafc' }}>Allow User Registration</label>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                id="userLogin"
+                checked={settings.userLogin}
+                onChange={() => handleSettingToggle('userLogin')}
+              />
+              <label htmlFor="userLogin" style={{ color: '#f8fafc' }}>Allow User Login</label>
+            </div>
+            <button type="submit" style={{ ...styles.button, width: 'fit-content', cursor: 'pointer' }}>
+              Save Settings
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
 };
 
-// Internal inline styles for quick preview / demo
 const styles = {
-  container: { padding: '24px', backgroundColor: '#020617', minHeight: '100vh', color: '#f8fafc' },
-  card: { backgroundColor: '#0f172a', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' },
+  container: { padding: '20px', backgroundColor: '#020617', minHeight: '100vh', color: '#f8fafc' },
+  card: { backgroundColor: '#0f172a', borderRadius: '8px', padding: '24px', border: '1px solid #1e293b' },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  badge: { backgroundColor: '#0284c7', color: '#fff', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 'bold' },
-  backBtn: { backgroundColor: 'transparent', color: '#38bdf8', border: 'none', cursor: 'pointer', fontSize: '0.9rem' },
-  heading: { fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '8px' },
-  subtext: { color: '#94a3b8', marginBottom: '24px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' },
-  infoBox: { backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155' },
-  boxTitle: { fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px', color: '#38bdf8' },
-  boxDesc: { color: '#94a3b8', fontSize: '0.875rem' },
-  tableContainer: { overflowX: 'auto', margin: '20px 0' },
-  table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left', border: '1px solid #334155' },
-  th: { backgroundColor: '#1e293b', padding: '12px', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase' },
-  tr: { borderBottom: '1px solid #334155' },
-  td: { padding: '12px', fontSize: '0.9rem' },
-  roleBadge: { backgroundColor: '#334155', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' },
-  statusBadge: { padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: '#fff' },
-  actionBtn: { padding: '6px 12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' },
-  button: { backgroundColor: '#0284c7', color: '#fff', padding: '10px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+  badge: { backgroundColor: '#1e293b', color: '#38bdf8', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' },
+  backBtn: { backgroundColor: 'transparent', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: '0.9rem' },
+  heading: { fontSize: '1.5rem', fontWeight: 'bold', margin: '0 0 8px 0' },
+  subtext: { color: '#94a3b8', fontSize: '0.9rem', marginBottom: '24px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' },
+  infoBox: { backgroundColor: '#1e293b', padding: '16px', borderRadius: '6px', border: '1px solid #334155' },
+  boxTitle: { margin: '0 0 8px 0', color: '#f8fafc' },
+  boxDesc: { margin: 0, fontSize: '0.85rem', color: '#94a3b8' },
+  tableContainer: { overflowX: 'auto' },
+  table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
+  th: { padding: '10px', backgroundColor: '#1e293b', color: '#cbd5e1', fontSize: '0.85rem', borderBottom: '1px solid #334155' },
+  td: { padding: '10px', borderBottom: '1px solid #334155', fontSize: '0.9rem' },
+  tr: { hover: { backgroundColor: '#1e293b' } },
+  roleBadge: { backgroundColor: '#334155', color: '#f8fafc', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' },
+  statusBadge: { padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', color: '#fff' },
+  actionBtn: { border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' },
+  input: { width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#f8fafc', boxSizing: 'border-box' },
+  button: { backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold' },
 };
 
 const styleCategory = {
-  form: { marginBottom: '24px' },
-  fieldset: { border: '1px solid #334155', borderRadius: '8px', padding: '16px' },
+  form: { marginBottom: '20px' },
+  fieldset: { border: '1px solid #334155', padding: '16px', borderRadius: '6px' },
   legend: { color: '#38bdf8', padding: '0 8px', fontWeight: 'bold' },
   inputGroup: { marginBottom: '12px' },
-  label: { display: 'block', marginBottom: '4px', color: '#cbd5e1' },
-  input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' },
+  label: { display: 'block', marginBottom: '4px', fontSize: '0.85rem', color: '#cbd5e1' },
 };
 
-const styleProduct = { ...styleCategory };
-
-const settingsStyles = {
-  card: {
-    backgroundColor: '#0f172a',
-    borderRadius: '12px',
-    padding: '24px',
-    border: '1px solid #1e293b',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  row: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: '16px',
-    borderBottom: '1px solid #1e293b',
-    gap: '16px',
-    flexWrap: 'wrap', // Responsive wrapping for mobile devices
-  },
-  textGroup: {
-    textAlign: 'left',
-    flex: '1 1 250px',
-  },
-  title: {
-    color: '#f8fafc',
-    fontSize: '1rem',
-    display: 'block',
-    marginBottom: '4px',
-  },
-  subtitle: {
-    color: '#94a3b8',
-    margin: 0,
-    fontSize: '0.85rem',
-  },
-  toggleBtn: {
-    border: 'none',
-    outline: 'none',
-    padding: '8px 18px',
-    borderRadius: '20px',
-    fontWeight: '600',
-    fontSize: '0.75rem',
-    letterSpacing: '0.05em',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    appearance: 'none',
-    WebkitAppearance: 'none',
-    minWidth: '95px',
-    textAlign: 'center',
-  },
-  saveBtn: {
-    border: 'none',
-    outline: 'none',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    padding: '12px 20px',
-    borderRadius: '8px',
-    fontWeight: '600',
-    fontSize: '0.95rem',
-    cursor: 'pointer',
-    marginTop: '10px',
-    transition: 'background-color 0.2s ease',
-    width: '100%',
-  },
+const styleProduct = {
+  form: { marginBottom: '20px' },
+  fieldset: { border: '1px solid #334155', padding: '16px', borderRadius: '6px' },
+  legend: { color: '#38bdf8', padding: '0 8px', fontWeight: 'bold' },
+  inputGroup: { marginBottom: '12px' },
+  label: { display: 'block', marginBottom: '4px', fontSize: '0.85rem', color: '#cbd5e1' },
 };
 
 export default AdminDashboard;

@@ -13,16 +13,15 @@ export const usePagination = (
   const [limit, setLimit] = useState(initialLimit);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Array Normalization: Strictly extract arrays directly
+  // 1. Normalize array safely
   const safeItems = useMemo(() => {
     if (Array.isArray(rawItems)) return rawItems;
     if (rawItems && Array.isArray(rawItems.data)) return rawItems.data;
     return [];
   }, [rawItems]);
 
-  // 2. Client-side Filtering
+  // 2. Filter logic (Disabled when using serverPagination)
   const filteredItems = useMemo(() => {
-    // If using server-side pagination/filtering, return items directly from response
     if (serverPagination) return safeItems;
 
     const query = searchTerm.toLowerCase().trim();
@@ -45,7 +44,7 @@ export const usePagination = (
     );
   }, [safeItems, searchTerm, JSON.stringify(searchFields), serverPagination]);
 
-  // 3. Dynamic Total Pages Calculation
+  // 3. Calculate total pages (Server override vs Client Math.ceil)
   const totalPages = useMemo(() => {
     if (serverPagination && typeof serverPagination.totalPages === 'number') {
       return serverPagination.totalPages;
@@ -53,17 +52,15 @@ export const usePagination = (
     return Math.max(1, Math.ceil(filteredItems.length / limit));
   }, [filteredItems.length, limit, serverPagination]);
 
-  // 4. Current Display Items
+  // 4. Slice display items (Server bypasses slice vs Client slices locally)
   const currentItems = useMemo(() => {
-    // Server returns pre-paginated array slice (e.g., 10 items)
     if (serverPagination) return safeItems;
 
-    // Client-side array slicing
     const startIndex = (currentPage - 1) * limit;
     return filteredItems.slice(startIndex, startIndex + limit);
   }, [safeItems, filteredItems, currentPage, limit, serverPagination]);
 
-  // Bounds Reset
+  // Reset page index if bounds are exceeded
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(1);
