@@ -357,47 +357,69 @@ fetchProducts();
     }
   };
 
-  const handleProductSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-  BASE_URL + '/addProduct',
-  {
-    productName: formProductData.productName,
-    ProductDescription: formProductData.ProductDescription,
-    productCategoryType: formProductData.productCategoryType,
-    ProductQty: formProductData.ProductQty,
-    ImageUrl: formProductData.ImageUrl,
-    price: formProductData.price,
-  },
-  {
-    headers:  { Authorization: `Bearer ${token}` }
-  }
-);
+ const handleProductSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
+    // 1. Retrieve & sanitize token (strips extra quotes or whitespace)
+    const rawToken = localStorage.getItem('token');
+    const token = rawToken ? rawToken.replace(/^["']|["']$/g, '').trim() : '';
 
-      const savedProduct = response.data;
-      if (savedProduct && savedProduct.productName) {
-        setProductsList((prev) => [...prev, savedProduct]);
-      } else {
-        const refreshResponse = await axios.get(`${BASE_URL}/products`);
-        setProductsList(refreshResponse.data);
-      }
-
-      setFormProductData({
-        productName: '',
-        ProductDescription: '',
-        productCategoryType: '',
-        ProductQty: '',
-        ImageUrl: '',
-        price: 0,
-      });
-      toast.success(response.data.message || 'Product added successfully!');
-    } catch (error) {
-      console.error('ADD PRODUCT ERROR:', error);
-      toast.error(error.response?.data?.message || 'Failed to add product.');
+    if (!token) {
+      toast.error('Session expired or no token found. Please log in again.');
+      return;
     }
-  };
+
+    // 2. Prepare payload with explicit type conversion for numeric fields
+    const payload = {
+      productName: formProductData.productName,
+      ProductDescription: formProductData.ProductDescription,
+      productCategoryType: formProductData.productCategoryType,
+      ProductQty: Number(formProductData.ProductQty),
+      ImageUrl: formProductData.ImageUrl,
+      price: Number(formProductData.price),
+    };
+
+    // 3. Make authenticated request
+    const response = await axios.post(
+      `${BASE_URL}/addProduct`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    // 4. Extract saved product (supports both direct object or { product: {...} } response)
+    const savedProduct = response.data.product || response.data;
+
+    if (savedProduct && savedProduct.productName) {
+      setProductsList((prev) => [...prev, savedProduct]);
+    } else {
+      const refreshResponse = await axios.get(`${BASE_URL}/products`);
+      setProductsList(refreshResponse.data);
+    }
+
+    // 5. Reset form and inform user
+    setFormProductData({
+      productName: '',
+      ProductDescription: '',
+      productCategoryType: '',
+      ProductQty: '',
+      ImageUrl: '',
+      price: 0,
+    });
+
+    toast.success(response.data.message || 'Product added successfully!');
+  } catch (error) {
+    console.error('ADD PRODUCT ERROR:', error.response?.data || error.message);
+    
+    // Displays specific error (e.g., duplicate product name or missing token message from backend)
+    const errorMsg = error.response?.data?.message || 'Failed to add product.';
+    toast.error(errorMsg);
+  }
+};
 
   const getStatusBadgeStyle = (status) => {
     const base = {
