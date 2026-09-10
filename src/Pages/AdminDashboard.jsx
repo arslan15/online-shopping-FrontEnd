@@ -331,10 +331,15 @@ fetchProducts();
     }
 
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.post(BASE_URL + '/addCategory', {
         categoryType: formData.categoryType,
         categoryDescription: formData.Description,
-      });
+      },
+      {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+    );
 
       const savedCategory = response.data.category || response.data;
       if (savedCategory && savedCategory.categoryType) {
@@ -355,14 +360,21 @@ fetchProducts();
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(BASE_URL + '/addProduct', {
-        productName: formProductData.productName,
-        ProductDescription: formProductData.ProductDescription,
-        productCategoryType: formProductData.productCategoryType,
-        ProductQty: formProductData.ProductQty,
-        ImageUrl: formProductData.ImageUrl,
-        price: formProductData.price,
-      });
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+  BASE_URL + '/addProduct',
+  {
+    productName: formProductData.productName,
+    ProductDescription: formProductData.ProductDescription,
+    productCategoryType: formProductData.productCategoryType,
+    ProductQty: formProductData.ProductQty,
+    ImageUrl: formProductData.ImageUrl,
+    price: formProductData.price,
+  },
+  {
+    headers:  { Authorization: `Bearer ${token}` }
+  }
+);
 
       const savedProduct = response.data;
       if (savedProduct && savedProduct.productName) {
