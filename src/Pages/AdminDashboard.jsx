@@ -914,48 +914,91 @@ const AdminDashboard = () => {
         )}
 
         {/* --- VIEW 6: SETTINGS --- */}
-        {activeTab === 'settings' && (
-          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div>
-              <label style={styleCategory.label}>Site Name</label>
-              <input
-                type="text"
-                value={settings.siteName}
-                onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                style={styles.input}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                id="maintenanceMode"
-                checked={settings.maintenanceMode}
-                onChange={() => handleSettingToggle('maintenanceMode')}
-              />
-              <label htmlFor="maintenanceMode" style={{ color: '#f8fafc' }}>Maintenance Mode</label>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                id="userRegistration"
-                checked={settings.userRegistration}
-                onChange={() => handleSettingToggle('userRegistration')}
-              />
-              <label htmlFor="userRegistration" style={{ color: '#f8fafc' }}>Allow User Registration</label>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                id="userLogin"
-                checked={settings.userLogin}
-                onChange={() => handleSettingToggle('userLogin')}
-              />
-              <label htmlFor="userLogin" style={{ color: '#f8fafc' }}>Allow User Login</label>
-            </div>
-            <button type="submit" style={{ ...styles.button, width: 'fit-content', cursor: 'pointer' }}>
-              Save Settings
-            </button>
-          </form>
+      {/* --- VIEW 6: SETTINGS --- */}
+{activeTab === 'settings' && (
+  <form onSubmit={handleSaveSettings} style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: '20px', 
+      width: '100%', 
+      maxWidth: '650px',
+      backgroundColor: '#111c34', // optional card background to match your theme
+      padding: '30px',
+      borderRadius: '12px',
+      border: '1px solid #1e293b',
+      alignItems: 'center',       /* <-- Ensures horizontal centering */
+    justifyContent: 'center', 
+    maxWidth: '800px',        /* Constrains the outer zone width */
+    margin: '0 auto',         /* <-- Forces the entire block to center horizontally */
+    minHeight: '70vh',   /* <-- Ensures vertical centering */
+    }}>
+    
+   {/* Setting Item: Maintenance Mode */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #1e293b' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <label htmlFor="maintenanceMode" style={{ color: '#f8fafc', fontSize: '1rem', fontWeight: '500', cursor: 'pointer' }}>Maintenance Mode</label>
+          <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>Temporarily disable site access for public users</span>
+        </div>
+        <label className="switch" style={toggleSwitchStyles.switch}>
+          <input
+            type="checkbox"
+            id="maintenanceMode"
+            checked={settings.maintenanceMode}
+            onChange={() => handleSettingToggle('maintenanceMode')}
+            style={{ opacity: 0, width: 0, height: 0 }}
+          />
+          <span className="slider round" style={{ ...toggleSwitchStyles.slider, backgroundColor: settings.maintenanceMode ? '#0284c7' : '#334155' }}>
+            <span style={{ ...toggleSwitchStyles.sliderBefore, transform: settings.maintenanceMode ? 'translateX(24px)' : 'translateX(0)' }} />
+          </span>
+        </label>
+      </div>
+
+      {/* Setting Item: Allow User Registration */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #1e293b' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <label htmlFor="userRegistration" style={{ color: '#f8fafc', fontSize: '1rem', fontWeight: '500', cursor: 'pointer' }}>Allow User Registration</label>
+          <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>Enable new artisan and customer account sign-ups</span>
+        </div>
+        <label className="switch" style={toggleSwitchStyles.switch}>
+          <input
+            type="checkbox"
+            id="userRegistration"
+            checked={settings.userRegistration}
+            onChange={() => handleSettingToggle('userRegistration')}
+            style={{ opacity: 0, width: 0, height: 0 }}
+          />
+          <span className="slider round" style={{ ...toggleSwitchStyles.slider, backgroundColor: settings.userRegistration ? '#0284c7' : '#334155' }}>
+            <span style={{ ...toggleSwitchStyles.sliderBefore, transform: settings.userRegistration ? 'translateX(24px)' : 'translateX(0)' }} />
+          </span>
+        </label>
+      </div>
+
+
+    {/* Setting Item: Allow User Login */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #1e293b' }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <label htmlFor="userLogin" style={{ color: '#f8fafc', fontSize: '1rem', fontWeight: '500', cursor: 'pointer' }}>Allow User Login</label>
+        <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>Allow existing users to authenticate into the shop</span>
+      </div>
+      <label className="switch" style={toggleSwitchStyles.switch}>
+        <input
+          type="checkbox"
+          id="userLogin"
+          checked={settings.userLogin}
+          onChange={() => handleSettingToggle('userLogin')}
+          style={{ opacity: 0, width: 0, height: 0 }}
+        />
+        <span className="slider round" style={{ ...toggleSwitchStyles.slider, backgroundColor: settings.userLogin ? '#0284c7' : '#334155' }}>
+          <span style={{ ...toggleSwitchStyles.sliderBefore, transform: settings.userLogin ? 'translateX(24px)' : 'translateX(0)' }} />
+        </span>
+      </label>
+    </div>
+
+    {/* Save Button */}
+    <button type="submit" style={{ ...styles.button, width: 'fit-content', cursor: 'pointer', backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: '600', marginTop: '10px',justifyContent: 'center'}}>
+      Save Settings
+    </button>
+  </form>
         )}
       </div>
     </div>
@@ -1000,6 +1043,33 @@ const styleProduct = {
   legend: { color: '#38bdf8', padding: '0 8px', fontWeight: 'bold' },
   inputGroup: { marginBottom: '12px' },
   label: { display: 'block', marginBottom: '4px', fontSize: '0.85rem', color: '#cbd5e1' },
+};
+const toggleSwitchStyles = {
+  switch: {
+    position: 'relative',
+    display: 'inline-block',
+    width: '48px',
+    height: '24px',
+    cursor: 'pointer',
+  },
+  slider: {
+    position: 'absolute',
+    cursor: 'pointer',
+    top: 0, left: 0, right: 0, bottom: 0,
+    transition: '.3s',
+    borderRadius: '24px',
+  },
+  sliderBefore: {
+    position: 'absolute',
+    content: '""',
+    height: '18px',
+    width: '18px',
+    left: '3px',
+    bottom: '3px',
+    backgroundColor: 'white',
+    transition: '.3s',
+    borderRadius: '50%',
+  }
 };
 
 export default AdminDashboard;
