@@ -12,7 +12,7 @@ const AdminDashboard = () => {
   const [categoriesList, setCategoriesList] = useState([]);
   const [productsList, setProductsList] = useState([]);
   const [isPending, startTransition] = useTransition();
-
+const [apiPagination, setApiPagination] = useState(null);
   const [formData, setFormData] = useState({
     Description: '',
     categoryType: '',
@@ -79,6 +79,7 @@ const AdminDashboard = () => {
       'paymentStatus',
     ],
     initialLimit: 10,
+    serverPagination: apiPagination,
   });
 
   const handleTabChange = (tabName) => {
@@ -199,6 +200,7 @@ const AdminDashboard = () => {
     } else {
       setProductsList([]); // Fallback if API structure is unexpected
     }
+    setApiPagination(response.data.pagination);
   } catch (error) {
     toast.error('Failed to fetch products');
     setProductsList([]);
