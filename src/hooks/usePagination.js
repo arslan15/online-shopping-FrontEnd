@@ -6,26 +6,24 @@ const getNestedValue = (obj, path) => {
 };
 
 export const usePagination = (
-  items = [],
+  rawItems = [],
   { searchFields = [], initialLimit = 10, serverPagination = null } = {}
 ) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(initialLimit);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Extract array
+  // 1. Array Normalization: Strictly extract arrays directly
   const safeItems = useMemo(() => {
-    if (Array.isArray(items)) return items;
-    if (items && Array.isArray(items.categories)) return items.categories;
-    if (items && Array.isArray(items.orders)) return items.orders;
-    if (items && Array.isArray(items.products)) return items.products;
-    if (items && Array.isArray(items.data)) return items.data;
+    if (Array.isArray(rawItems)) return rawItems;
+    if (rawItems && Array.isArray(rawItems.data)) return rawItems.data;
     return [];
-  }, [items]);
+  }, [rawItems]);
 
-  // 2. Filter logic (Only applied locally if not server-paginated)
+  // 2. Client-side Filtering
   const filteredItems = useMemo(() => {
-    if (serverPagination) return safeItems; // Server already filtered/paginated
+    // If using server-side pagination/filtering, return items directly from response
+    if (serverPagination) return safeItems;
 
     const query = searchTerm.toLowerCase().trim();
     if (!query) return safeItems;
@@ -47,21 +45,25 @@ export const usePagination = (
     );
   }, [safeItems, searchTerm, JSON.stringify(searchFields), serverPagination]);
 
-  // 3. Total Pages: Use server metadata if passed, else derive locally
+  // 3. Dynamic Total Pages Calculation
   const totalPages = useMemo(() => {
-    if (serverPagination && serverPagination.totalPages) {
+    if (serverPagination && typeof serverPagination.totalPages === 'number') {
       return serverPagination.totalPages;
     }
     return Math.max(1, Math.ceil(filteredItems.length / limit));
   }, [filteredItems.length, limit, serverPagination]);
 
-  // 4. Current Display Items: Use as-is if server-paginated, else slice locally
+  // 4. Current Display Items
   const currentItems = useMemo(() => {
-    if (serverPagination) return safeItems; // Already 10 items from backend
+    // Server returns pre-paginated array slice (e.g., 10 items)
+    if (serverPagination) return safeItems;
+
+    // Client-side array slicing
     const startIndex = (currentPage - 1) * limit;
     return filteredItems.slice(startIndex, startIndex + limit);
   }, [safeItems, filteredItems, currentPage, limit, serverPagination]);
 
+  // Bounds Reset
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(1);

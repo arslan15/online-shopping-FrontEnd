@@ -53,7 +53,7 @@ const [apiPagination, setApiPagination] = useState(null);
         return [];
     }
   };
-
+const isServerPaginated = activeTab === 'products';
   const {
     currentItems: displayedItems,
     currentPage,
@@ -79,7 +79,7 @@ const [apiPagination, setApiPagination] = useState(null);
       'paymentStatus',
     ],
     initialLimit: 10,
-    serverPagination: apiPagination,
+   serverPagination: isServerPaginated ? apiPagination : null,
   });
 
   const handleTabChange = (tabName) => {
