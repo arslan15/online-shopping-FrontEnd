@@ -176,7 +176,7 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${BASE_URL}/Products?page=${pageToFetch}&limit=${fetchLimit}`,
+        `${BASE_URL}/Products?page=${pageToFetch}&limit=${fetchLimit}&search=${encodeURIComponent(searchTerm || '')}`,
         { headers: getAuthHeader() }
       );
       
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [BASE_URL]);
+  }, [BASE_URL,searchTerm]);
 
   useEffect(() => {
     if (activeTab === 'product') {
